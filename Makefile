@@ -7,7 +7,7 @@ VENV_PIP ?= $(VENV_PYTHON) -m pip
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install setup-venv install-frontend install-backend backend-dev dev dev-all build tauri-dev tauri-build build-windows build-linux build-mac build-sidecar clean
+.PHONY: help install setup-venv install-frontend install-backend backend-dev dev dev-all build tauri-dev tauri-build build-windows build-linux build-mac build-sidecar release clean
 
 help:
 	@echo "可用命令:"
@@ -26,6 +26,7 @@ help:
 	@echo "  make build-mac          打包 macOS 安装包 (.dmg + .app)"
 	@echo "  make build-sidecar      用 PyInstaller 编译 Python 后端为第一方 sidecar"
 	@echo "                          (构建安装包前必须先运行此命令！)"
+	@echo "  make release VERSION=1.0.0  一键发版：推送分支+打 tag+推送 tag"
 	@echo "  make clean              清理前端构建产物"
 
 install: install-frontend install-backend
@@ -83,6 +84,13 @@ build-mac:
 build-sidecar: setup-venv
 	cd python-backend && ../$(VENV_PIP) install pyinstaller && ../$(VENV_PYTHON) -m PyInstaller aitoreder-backend.spec --clean
 	$(PYTHON) -c "import shutil, pathlib; dest=pathlib.Path('src-tauri/binaries/aitoreder-backend'); dest.mkdir(parents=True, exist_ok=True); shutil.copytree('python-backend/dist/aitoreder-backend', str(dest), dirs_exist_ok=True)"
+
+release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "请提供版本号，例如: make release VERSION=1.0.0"; \
+		exit 1; \
+	fi
+	bash scripts/release.sh "$(VERSION)"
 
 clean:
 	node -e "require('fs').rmSync('dist', { recursive: true, force: true })"

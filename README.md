@@ -92,6 +92,22 @@ npm run tauri:dev
 
 如果你要发布给最终用户，还需要后续补充签名与公证流程（尤其是 macOS）。
 
+### Debian 一键发版
+
+如果你已配置好远端（至少 `origin`），可直接使用：
+
+```bash
+make release VERSION=1.0.1
+```
+
+该命令会调用 [scripts/release.sh](scripts/release.sh)：
+
+1. 推送当前分支到 `origin`
+2. 创建并推送标签 `vVERSION`
+3. 如果存在 `github` 远端，再额外推送到 `github`
+
+这样就能在 Debian 端完成发版触发，不需要本机构建 Win/Mac。
+
 ## Gitee 方案（不依赖 GitHub）
 
 可以，只要你的 Gitee 流水线具备原生 runner：
@@ -102,6 +118,7 @@ npm run tauri:dev
 仓库已提供通用构建脚本：[scripts/ci/build_desktop.sh](scripts/ci/build_desktop.sh)
 Windows PowerShell 版本脚本：[scripts/ci/build_desktop.ps1](scripts/ci/build_desktop.ps1)
 并提供可直接使用的 Gitee 工作流模板：[.gitee/workflows/build-desktop.yml](.gitee/workflows/build-desktop.yml)
+以及 Gitee 镜像到 GitHub 的完整步骤：[docs/gitee-github-mirror.md](docs/gitee-github-mirror.md)
 
 在不同 runner 上调用：
 
