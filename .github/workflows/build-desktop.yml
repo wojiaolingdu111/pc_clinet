@@ -56,11 +56,13 @@ jobs:
 
       - name: Build Python sidecar
         working-directory: python-backend
-        run: python -m PyInstaller aitoreder-backend.spec --clean
-
-      - name: Copy sidecar into Tauri resources
         run: |
-          python -c "import pathlib, shutil; src=pathlib.Path('python-backend/dist/aitoreder-backend'); dest=pathlib.Path('src-tauri/binaries/aitoreder-backend'); dest.mkdir(parents=True, exist_ok=True); shutil.copytree(src, dest, dirs_exist_ok=True)"
+          python -m PyInstaller aitoreder-backend.spec --clean --distpath ../src-tauri/binaries
+
+      - name: Verify sidecar resources
+        run: |
+          ls -la src-tauri/binaries
+          ls -la src-tauri/binaries/aitoreder-backend
 
       - name: Build Tauri bundles
         run: pnpm exec tauri build --bundles ${{ matrix.bundles }}

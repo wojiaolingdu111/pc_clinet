@@ -82,8 +82,8 @@ build-mac:
 # 自动在项目虚拟环境中安装并使用 PyInstaller
 # 构建后自动将产物拷贝到 src-tauri/binaries/aitoreder-backend/
 build-sidecar: setup-venv
-	cd python-backend && ../$(VENV_PIP) install pyinstaller && ../$(VENV_PYTHON) -m PyInstaller aitoreder-backend.spec --clean
-	$(PYTHON) -c "import shutil, pathlib; dest=pathlib.Path('src-tauri/binaries/aitoreder-backend'); dest.mkdir(parents=True, exist_ok=True); shutil.copytree('python-backend/dist/aitoreder-backend', str(dest), dirs_exist_ok=True)"
+	cd python-backend && ../$(VENV_PIP) install pyinstaller && ../$(VENV_PYTHON) -m PyInstaller aitoreder-backend.spec --clean --distpath ../src-tauri/binaries
+	@test -d src-tauri/binaries/aitoreder-backend || (echo "sidecar 构建失败：未生成 src-tauri/binaries/aitoreder-backend" && exit 1)
 
 release:
 	@if [ -z "$(VERSION)" ]; then \
