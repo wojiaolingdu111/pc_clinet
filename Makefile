@@ -1,14 +1,18 @@
 PNPM ?= pnpm
-PYTHON ?= python
+PYTHON ?= python3
 PIP ?= $(PYTHON) -m pip
+VENV_DIR ?= .venv
+VENV_PYTHON ?= $(VENV_DIR)/bin/python
+VENV_PIP ?= $(VENV_PYTHON) -m pip
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-frontend install-backend backend-dev dev dev-all build tauri-dev tauri-build build-windows build-linux build-mac build-sidecar clean
+.PHONY: help install setup-venv install-frontend install-backend backend-dev dev dev-all build tauri-dev tauri-build build-windows build-linux build-mac build-sidecar clean
 
 help:
 	@echo "可用命令:"
 	@echo "  make install            安装前后端依赖"
+	@echo "  make setup-venv         创建/更新项目 Python 虚拟环境 (.venv)"
 	@echo "  make install-frontend   安装前端依赖"
 	@echo "  make install-backend    安装 Python 依赖"
 	@echo "  make backend-dev        启动 Python 后端 (127.0.0.1:8765)"
@@ -26,14 +30,18 @@ help:
 
 install: install-frontend install-backend
 
+setup-venv:
+	$(PYTHON) -m venv $(VENV_DIR)
+	$(VENV_PIP) install --upgrade pip
+
 install-frontend:
 	$(PNPM) install
 
-install-backend:
-	cd python-backend && $(PIP) install -r requirements.txt
+install-backend: setup-venv
+	cd python-backend && ../$(VENV_PIP) install -r requirements.txt
 
-backend-dev:
-	cd python-backend && $(PYTHON) app.py
+backend-dev: install-backend
+	cd python-backend && ../$(VENV_PYTHON) app.py
 
 dev:
 	$(PNPM) dev
@@ -51,19 +59,29 @@ tauri-build:
 	$(PNPM) tauri:build
 
 build-windows:
+	@if [ "$(OS)" != "Windows_NT" ]; then \
+		echo "当前主机不是 Windows，无法本地打包 Windows 安装包。"; \
+		echo "请使用 GitHub Actions: .github/workflows/build-desktop.yml"; \
+		exit 1; \
+	fi
 	$(PNPM) tauri:build -- --bundles nsis,msi
 
 build-linux:
 	$(PNPM) tauri:build -- --bundles deb,rpm,appimage
 
 build-mac:
+	@if [ "$$(uname -s)" != "Darwin" ]; then \
+		echo "当前主机不是 macOS，无法本地打包 macOS 安装包。"; \
+		echo "请使用 GitHub Actions: .github/workflows/build-desktop.yml"; \
+		exit 1; \
+	fi
 	$(PNPM) tauri:build -- --bundles dmg,app
 
 # 将 Python 后端编译为独立可执行文件（sidecar）
-# 需要已安装：pip install pyinstaller
+# 自动在项目虚拟环境中安装并使用 PyInstaller
 # 构建后自动将产物拷贝到 src-tauri/binaries/aitoreder-backend/
-build-sidecar:
-	cd python-backend && $(PYTHON) -m PyInstaller aitoreder-backend.spec --clean
+build-sidecar: setup-venv
+	cd python-backend && ../$(VENV_PIP) install pyinstaller && ../$(VENV_PYTHON) -m PyInstaller aitoreder-backend.spec --clean
 	$(PYTHON) -c "import shutil, pathlib; dest=pathlib.Path('src-tauri/binaries/aitoreder-backend'); dest.mkdir(parents=True, exist_ok=True); shutil.copytree('python-backend/dist/aitoreder-backend', str(dest), dirs_exist_ok=True)"
 
 clean:

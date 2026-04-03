@@ -68,6 +68,24 @@ npm install
 npm run tauri:dev
 ```
 
+## 在 Debian 打包 Windows 和 macOS
+
+在 Debian 本机可以打包 Linux 安装包，但通常不能直接产出 macOS 安装包；Windows 安装包也建议在 Windows 环境构建。
+
+本仓库已提供 GitHub Actions 工作流：[.github/workflows/build-desktop.yml](.github/workflows/build-desktop.yml)
+
+- `windows-latest` 产出：`nsis` + `msi`
+- `macos-latest` 产出：`dmg` + `app`
+- 同时会在对应系统内构建 Python sidecar（PyInstaller）并打入 Tauri 资源目录
+
+使用方式：
+
+1. 推送代码到 GitHub。
+2. 打开 Actions，运行 `Build Desktop Installers`（支持手动触发 `workflow_dispatch`）。
+3. 在每个 job 的 Artifacts 下载安装包。
+
+如果你要发布给最终用户，还需要后续补充签名与公证流程（尤其是 macOS）。
+
 ## 后续接入 Coqui TTS
 
 当前 python-backend/services/tts_service.py 只是写出一个简易 wav 预览音，方便先打通目录、返回结构和播放器。后续替换为真实 Coqui TTS 时，建议保持 generate 的输入输出字段不变。
