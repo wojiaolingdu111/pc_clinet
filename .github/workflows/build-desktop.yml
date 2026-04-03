@@ -63,7 +63,7 @@ jobs:
           python -c "import pathlib, shutil; src=pathlib.Path('python-backend/dist/aitoreder-backend'); dest=pathlib.Path('src-tauri/binaries/aitoreder-backend'); dest.mkdir(parents=True, exist_ok=True); shutil.copytree(src, dest, dirs_exist_ok=True)"
 
       - name: Build Tauri bundles
-        run: pnpm tauri:build -- --bundles ${{ matrix.bundles }}
+        run: pnpm exec tauri build --bundles ${{ matrix.bundles }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

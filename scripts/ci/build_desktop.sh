@@ -28,6 +28,6 @@ echo "[4/5] Copy sidecar to Tauri resources"
 python -c "import pathlib, shutil; src=pathlib.Path('python-backend/dist/aitoreder-backend'); dest=pathlib.Path('src-tauri/binaries/aitoreder-backend'); dest.mkdir(parents=True, exist_ok=True); shutil.copytree(src, dest, dirs_exist_ok=True)"
 
 echo "[5/5] Build Tauri bundles: ${BUNDLES}"
-pnpm tauri:build -- --bundles "$BUNDLES"
+pnpm exec tauri build --bundles "$BUNDLES"
 
 echo "Done. Bundles are in src-tauri/target/release/bundle"

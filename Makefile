@@ -65,10 +65,10 @@ build-windows:
 		echo "请使用 GitHub Actions: .github/workflows/build-desktop.yml"; \
 		exit 1; \
 	fi
-	$(PNPM) tauri:build -- --bundles nsis,msi
+	$(PNPM) exec tauri build --bundles nsis,msi
 
 build-linux:
-	$(PNPM) tauri:build -- --bundles deb,rpm,appimage
+	$(PNPM) exec tauri build --bundles deb,rpm,appimage
 
 build-mac:
 	@if [ "$$(uname -s)" != "Darwin" ]; then \
@@ -76,7 +76,7 @@ build-mac:
 		echo "请使用 GitHub Actions: .github/workflows/build-desktop.yml"; \
 		exit 1; \
 	fi
-	$(PNPM) tauri:build -- --bundles dmg,app
+	$(PNPM) exec tauri build --bundles dmg,app
 
 # 将 Python 后端编译为独立可执行文件（sidecar）
 # 自动在项目虚拟环境中安装并使用 PyInstaller
