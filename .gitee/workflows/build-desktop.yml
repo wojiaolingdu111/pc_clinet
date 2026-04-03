@@ -33,9 +33,9 @@ jobs:
           python-version: '3.11'
 
       - name: Build Windows installers
-        shell: bash
+        shell: pwsh
         run: |
-          bash scripts/ci/build_desktop.sh nsis,msi
+          ./scripts/ci/build_desktop.ps1 -Bundles "nsis,msi"
 
   build_macos:
     name: Build macOS Bundles

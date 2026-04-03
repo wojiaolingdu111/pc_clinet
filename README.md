@@ -100,13 +100,14 @@ npm run tauri:dev
 - macOS runner: 构建 `dmg` 和 `app`
 
 仓库已提供通用构建脚本：[scripts/ci/build_desktop.sh](scripts/ci/build_desktop.sh)
+Windows PowerShell 版本脚本：[scripts/ci/build_desktop.ps1](scripts/ci/build_desktop.ps1)
 并提供可直接使用的 Gitee 工作流模板：[.gitee/workflows/build-desktop.yml](.gitee/workflows/build-desktop.yml)
 
 在不同 runner 上调用：
 
 ```bash
 # Windows runner
-bash scripts/ci/build_desktop.sh nsis,msi
+pwsh -File scripts/ci/build_desktop.ps1 -Bundles "nsis,msi"
 
 # macOS runner
 bash scripts/ci/build_desktop.sh dmg,app
@@ -116,7 +117,7 @@ bash scripts/ci/build_desktop.sh dmg,app
 
 - `src-tauri/target/release/bundle/`
 
-提示：如果你的 Windows runner 默认不是 Bash，请改为在 Git Bash 环境执行，或把这段脚本逻辑改写为 PowerShell 版本。
+提示：Windows runner 推荐直接用 PowerShell 脚本；macOS runner 使用 Bash 脚本。
 
 ## 后续接入 Coqui TTS
 
