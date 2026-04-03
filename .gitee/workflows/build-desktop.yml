@@ -1,0 +1,69 @@
+name: Build Desktop Installers (Gitee)
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build_windows:
+    name: Build Windows Bundles
+    # 需要你在 Gitee 上配置带有 windows 标签的自建 runner
+    runs-on: [self-hosted, windows]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build Windows installers
+        shell: bash
+        run: |
+          bash scripts/ci/build_desktop.sh nsis,msi
+
+  build_macos:
+    name: Build macOS Bundles
+    # 需要你在 Gitee 上配置带有 macos 标签的自建 runner
+    runs-on: [self-hosted, macos]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build macOS installers
+        shell: bash
+        run: |
+          bash scripts/ci/build_desktop.sh dmg,app

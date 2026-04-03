@@ -84,7 +84,39 @@ npm run tauri:dev
 2. 打开 Actions，运行 `Build Desktop Installers`（支持手动触发 `workflow_dispatch`）。
 3. 在每个 job 的 Artifacts 下载安装包。
 
+自动发布方式：
+
+1. 在本地创建并推送版本标签（例如 `v0.1.0`）。
+2. 工作流会自动构建 Win/Mac 安装包。
+3. 构建产物会自动上传到同名 GitHub Release 附件。
+
 如果你要发布给最终用户，还需要后续补充签名与公证流程（尤其是 macOS）。
+
+## Gitee 方案（不依赖 GitHub）
+
+可以，只要你的 Gitee 流水线具备原生 runner：
+
+- Windows runner: 构建 `nsis` 和 `msi`
+- macOS runner: 构建 `dmg` 和 `app`
+
+仓库已提供通用构建脚本：[scripts/ci/build_desktop.sh](scripts/ci/build_desktop.sh)
+并提供可直接使用的 Gitee 工作流模板：[.gitee/workflows/build-desktop.yml](.gitee/workflows/build-desktop.yml)
+
+在不同 runner 上调用：
+
+```bash
+# Windows runner
+bash scripts/ci/build_desktop.sh nsis,msi
+
+# macOS runner
+bash scripts/ci/build_desktop.sh dmg,app
+```
+
+构建完成后，从以下目录收集产物并上传到你的 Gitee 制品库或发布页：
+
+- `src-tauri/target/release/bundle/`
+
+提示：如果你的 Windows runner 默认不是 Bash，请改为在 Git Bash 环境执行，或把这段脚本逻辑改写为 PowerShell 版本。
 
 ## 后续接入 Coqui TTS
 
