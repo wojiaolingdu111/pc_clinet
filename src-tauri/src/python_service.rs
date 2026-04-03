@@ -58,10 +58,14 @@ pub struct CloneVoiceResponse {
     pub status: String,
 }
 
-pub async fn get_service_status(client: &Client, base_url: &str) -> ServiceStatusResponse {
+pub async fn get_service_status(
+    client: &Client,
+    base_url: &str,
+    backend_token: Option<&str>,
+) -> ServiceStatusResponse {
     let health_url = format!("{base_url}/health");
 
-    match client.get(&health_url).send().await {
+    match with_auth(client.get(&health_url), backend_token).send().await {
         Ok(response) if response.status().is_success() => ServiceStatusResponse {
             running: true,
             mode: "mock".to_string(),
@@ -83,10 +87,21 @@ pub async fn get_service_status(client: &Client, base_url: &str) -> ServiceStatu
     }
 }
 
-pub async fn list_voices(client: &Client, base_url: &str) -> Result<VoicesResponse> {
+fn with_auth(builder: reqwest::RequestBuilder, backend_token: Option<&str>) -> reqwest::RequestBuilder {
+    if let Some(token) = backend_token {
+        builder.header("x-aitoreder-token", token)
+    } else {
+        builder
+    }
+}
+
+pub async fn list_voices(
+    client: &Client,
+    base_url: &str,
+    backend_token: Option<&str>,
+) -> Result<VoicesResponse> {
     let url = format!("{base_url}/voices");
-    let response = client
-        .get(url)
+    let response = with_auth(client.get(url), backend_token)
         .send()
         .await
         .context("无法连接 Python 服务")?
@@ -102,11 +117,11 @@ pub async fn list_voices(client: &Client, base_url: &str) -> Result<VoicesRespon
 pub async fn generate_speech(
     client: &Client,
     base_url: &str,
+    backend_token: Option<&str>,
     payload: &GenerateSpeechPayload,
 ) -> Result<GenerateSpeechResponse> {
     let url = format!("{base_url}/generate-speech");
-    let response = client
-        .post(url)
+    let response = with_auth(client.post(url), backend_token)
         .json(payload)
         .send()
         .await
@@ -123,11 +138,11 @@ pub async fn generate_speech(
 pub async fn clone_voice(
     client: &Client,
     base_url: &str,
+    backend_token: Option<&str>,
     payload: &CloneVoicePayload,
 ) -> Result<CloneVoiceResponse> {
     let url = format!("{base_url}/clone-voice");
-    let response = client
-        .post(url)
+    let response = with_auth(client.post(url), backend_token)
         .json(payload)
         .send()
         .await
@@ -141,10 +156,14 @@ pub async fn clone_voice(
         .context("声音克隆结果解析失败")
 }
 
-pub async fn delete_voice_profile(client: &Client, base_url: &str, voice_profile_id: &str) -> Result<()> {
+pub async fn delete_voice_profile(
+    client: &Client,
+    base_url: &str,
+    backend_token: Option<&str>,
+    voice_profile_id: &str,
+) -> Result<()> {
     let url = format!("{base_url}/voices/{voice_profile_id}");
-    client
-        .delete(url)
+    with_auth(client.delete(url), backend_token)
         .send()
         .await
         .context("删除音色 profile 失败")?

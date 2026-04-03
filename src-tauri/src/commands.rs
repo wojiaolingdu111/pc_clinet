@@ -45,14 +45,25 @@ pub struct CloneVoiceArgsPayload {
 
 #[tauri::command]
 pub async fn get_service_status(state: State<'_, AppState>) -> Result<ServiceStatusResponse, String> {
-    Ok(python_service::get_service_status(&state.client, &state.python_base_url).await)
+    Ok(
+        python_service::get_service_status(
+            &state.client,
+            &state.python_base_url,
+            state.backend_token.as_deref(),
+        )
+        .await,
+    )
 }
 
 #[tauri::command]
 pub async fn list_voices(state: State<'_, AppState>) -> Result<VoicesPayload, String> {
-    let response = python_service::list_voices(&state.client, &state.python_base_url)
-        .await
-        .map_err(|error| error.to_string())?;
+    let response = python_service::list_voices(
+        &state.client,
+        &state.python_base_url,
+        state.backend_token.as_deref(),
+    )
+    .await
+    .map_err(|error| error.to_string())?;
 
     Ok(VoicesPayload {
         builtin_voices: response.builtin_voices,
@@ -68,6 +79,7 @@ pub async fn generate_speech(
     let response = python_service::generate_speech(
         &state.client,
         &state.python_base_url,
+        state.backend_token.as_deref(),
         &GenerateSpeechPayload {
             text: payload.text,
             voice_id: payload.voice_id,
@@ -90,6 +102,7 @@ pub async fn clone_voice(
     let response = python_service::clone_voice(
         &state.client,
         &state.python_base_url,
+        state.backend_token.as_deref(),
         &CloneVoicePayload {
             name: payload.name,
             audio_path: payload.audio_path,
@@ -107,7 +120,12 @@ pub async fn delete_voice_profile(
     voice_profile_id: String,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    python_service::delete_voice_profile(&state.client, &state.python_base_url, &voice_profile_id)
-        .await
-        .map_err(|error| error.to_string())
+    python_service::delete_voice_profile(
+        &state.client,
+        &state.python_base_url,
+        state.backend_token.as_deref(),
+        &voice_profile_id,
+    )
+    .await
+    .map_err(|error| error.to_string())
 }

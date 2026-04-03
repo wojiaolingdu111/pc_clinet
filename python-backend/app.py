@@ -1,8 +1,10 @@
 from pathlib import Path
+import os
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
 from services.tts_service import TtsService
@@ -36,6 +38,16 @@ APP_DATA_DIR = ROOT_DIR / "app-data"
 OUTPUT_DIR = APP_DATA_DIR / "outputs"
 VOICE_DIR = APP_DATA_DIR / "voices"
 MODEL_DIR = ROOT_DIR / "models"
+BACKEND_PORT = int(os.getenv("AITOREDER_BACKEND_PORT", "8765"))
+BACKEND_TOKEN = os.getenv("AITOREDER_BACKEND_TOKEN", "").strip()
+ALLOWED_ORIGINS = [
+    item.strip()
+    for item in os.getenv(
+        "AITOREDER_CORS_ORIGINS",
+        "http://localhost:1420,http://127.0.0.1:1420,http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if item.strip()
+]
 
 for target in (APP_DATA_DIR, OUTPUT_DIR, VOICE_DIR, MODEL_DIR):
     target.mkdir(parents=True, exist_ok=True)
@@ -43,7 +55,7 @@ for target in (APP_DATA_DIR, OUTPUT_DIR, VOICE_DIR, MODEL_DIR):
 app = FastAPI(title="AI ToReder Python Backend", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,6 +64,16 @@ app.mount("/media", StaticFiles(directory=APP_DATA_DIR), name="media")
 
 tts_service = TtsService(output_dir=OUTPUT_DIR, media_prefix="/media/outputs")
 voice_clone_service = VoiceCloneService(voice_dir=VOICE_DIR, media_prefix="/media/voices/profiles")
+
+
+@app.middleware("http")
+async def verify_backend_token(request, call_next):
+    if BACKEND_TOKEN:
+        request_token = request.headers.get("x-aitoreder-token", "")
+        if request_token != BACKEND_TOKEN:
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
+    return await call_next(request)
 
 
 @app.get("/health")
@@ -110,4 +132,4 @@ def delete_voice_profile(voice_profile_id: str) -> dict[str, str]:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app:app", host="127.0.0.1", port=8765, reload=False)
+    uvicorn.run("app:app", host="127.0.0.1", port=BACKEND_PORT, reload=False)
