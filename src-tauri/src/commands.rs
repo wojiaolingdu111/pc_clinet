@@ -1,0 +1,113 @@
+use serde::{Deserialize, Serialize};
+use tauri::State;
+
+use crate::python_service::{
+    self, CloneVoicePayload, GenerateSpeechPayload, ServiceStatusResponse, VoiceProfile,
+};
+use crate::state::AppState;
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoicesPayload {
+    builtin_voices: Vec<VoiceProfile>,
+    custom_voices: Vec<VoiceProfile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateSpeechArgs {
+    pub payload: GenerateSpeechArgsPayload,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateSpeechArgsPayload {
+    pub text: String,
+    pub voice_id: String,
+    pub speed: f32,
+    pub language: String,
+    pub output_format: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloneVoiceArgs {
+    pub payload: CloneVoiceArgsPayload,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloneVoiceArgsPayload {
+    pub name: String,
+    pub audio_path: String,
+    pub language: String,
+}
+
+#[tauri::command]
+pub async fn get_service_status(state: State<'_, AppState>) -> Result<ServiceStatusResponse, String> {
+    Ok(python_service::get_service_status(&state.client, &state.python_base_url).await)
+}
+
+#[tauri::command]
+pub async fn list_voices(state: State<'_, AppState>) -> Result<VoicesPayload, String> {
+    let response = python_service::list_voices(&state.client, &state.python_base_url)
+        .await
+        .map_err(|error| error.to_string())?;
+
+    Ok(VoicesPayload {
+        builtin_voices: response.builtin_voices,
+        custom_voices: response.custom_voices,
+    })
+}
+
+#[tauri::command]
+pub async fn generate_speech(
+    payload: GenerateSpeechArgsPayload,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let response = python_service::generate_speech(
+        &state.client,
+        &state.python_base_url,
+        &GenerateSpeechPayload {
+            text: payload.text,
+            voice_id: payload.voice_id,
+            speed: payload.speed,
+            language: payload.language,
+            output_format: payload.output_format,
+        },
+    )
+    .await
+    .map_err(|error| error.to_string())?;
+
+    serde_json::to_value(response).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn clone_voice(
+    payload: CloneVoiceArgsPayload,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let response = python_service::clone_voice(
+        &state.client,
+        &state.python_base_url,
+        &CloneVoicePayload {
+            name: payload.name,
+            audio_path: payload.audio_path,
+            language: payload.language,
+        },
+    )
+    .await
+    .map_err(|error| error.to_string())?;
+
+    serde_json::to_value(response).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_voice_profile(
+    voice_profile_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    python_service::delete_voice_profile(&state.client, &state.python_base_url, &voice_profile_id)
+        .await
+        .map_err(|error| error.to_string())
+}
