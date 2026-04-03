@@ -27,7 +27,7 @@
     "targets": "all",
     "createUpdaterArtifacts": false,
     "resources": [
-      "../python-backend/**"
+      "binaries/aitoreder-backend/**"
     ]
   }
 }

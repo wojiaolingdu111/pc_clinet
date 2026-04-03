@@ -83,10 +83,25 @@ fn ensure_python_backend_running(app_handle: &AppHandle) -> BackendStartup {
         }
     };
 
+    // --- 1. 首先尝试已编译 sidecar（生产安装包）---
+    if let Some(sidecar) = find_sidecar_binary(app_handle) {
+        let mut cmd = Command::new(&sidecar);
+        cmd.env("AITOREDER_BACKEND_PORT", port.to_string());
+        cmd.env("AITOREDER_BACKEND_TOKEN", token.as_str());
+        if cmd.spawn().is_ok() && wait_for_port(addr) {
+            eprintln!("已通过 sidecar 启动后端：{}", sidecar.display());
+            return BackendStartup {
+                base_url: format!("http://127.0.0.1:{port}"),
+                token: Some(token),
+            };
+        }
+    }
+
+    // --- 2. 回退：系统 Python（开发模式）---
     let backend_dir = match find_backend_dir(app_handle) {
         Some(path) => path,
         None => {
-            eprintln!("python-backend 目录未找到，跳过自动启动。\n");
+            eprintln!("Python 后端未找到，请检查安装或运行 make build-sidecar。");
             return BackendStartup {
                 base_url: default_url,
                 token: None,
@@ -110,7 +125,7 @@ fn ensure_python_backend_running(app_handle: &AppHandle) -> BackendStartup {
 
         if command.spawn().is_ok() {
             if wait_for_port(addr) {
-                eprintln!("已自动启动 Python 后端：{}", bin);
+                eprintln!("已通过系统 Python 启动后端：{}", bin);
                 return BackendStartup {
                     base_url: format!("http://127.0.0.1:{port}"),
                     token: Some(token),
@@ -121,7 +136,7 @@ fn ensure_python_backend_running(app_handle: &AppHandle) -> BackendStartup {
         }
     }
 
-    eprintln!("自动启动 Python 后端失败，请手动运行 python-backend/app.py。");
+    eprintln!("后端启动失败。请检查 Python 安装或运行 make build-sidecar 构建 sidecar。");
     BackendStartup {
         base_url: default_url,
         token: None,
@@ -151,6 +166,40 @@ fn wait_for_port(addr: SocketAddr) -> bool {
     }
 
     false
+}
+
+fn find_sidecar_binary(app_handle: &AppHandle) -> Option<PathBuf> {
+    let exe_name = if cfg!(windows) {
+        "aitoreder-backend.exe"
+    } else {
+        "aitoreder-backend"
+    };
+
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    // 生产包：Tauri resource_dir 下的 sidecar 子目录
+    if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        candidates.push(
+            resource_dir
+                .join("binaries")
+                .join("aitoreder-backend")
+                .join(exe_name),
+        );
+    }
+
+    // 备用：可执行文件同级目录
+    if let Ok(exe_path) = env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            candidates.push(
+                exe_dir
+                    .join("binaries")
+                    .join("aitoreder-backend")
+                    .join(exe_name),
+            );
+        }
+    }
+
+    candidates.into_iter().find(|p| p.is_file())
 }
 
 fn find_backend_dir(app_handle: &AppHandle) -> Option<PathBuf> {

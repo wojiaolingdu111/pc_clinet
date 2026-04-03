@@ -73,6 +73,7 @@ class VoiceCloneService:
             "language": [language],
             "description": f"参考音频：{audio_path.name}",
             "preview_audio": f"{self.media_prefix}/{target_audio.name}",
+            "local_audio_path": str(target_audio.resolve()),
         }
         (self.profile_dir / f"{voice_profile_id}.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2),

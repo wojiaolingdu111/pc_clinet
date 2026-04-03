@@ -24,6 +24,7 @@ pub fn run() {
             commands::clone_voice,
             commands::delete_voice_profile,
             commands::get_service_status,
+            commands::pick_audio_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

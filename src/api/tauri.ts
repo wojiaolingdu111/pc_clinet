@@ -80,6 +80,7 @@ interface PythonCloneVoiceResponse {
 interface PythonHealthResponse {
   status: string;
   mode: 'mock' | 'coqui';
+  model_loaded?: boolean;
 }
 
 const PYTHON_BASE_URL = 'http://127.0.0.1:8765';
@@ -286,4 +287,8 @@ export async function deleteVoiceProfile(voiceProfileId: string): Promise<void> 
   }
 
   await safeInvoke('delete_voice_profile', { voiceProfileId });
+}
+
+export async function pickAudioFile(): Promise<string | null> {
+  return safeInvoke<string | null>('pick_audio_file');
 }

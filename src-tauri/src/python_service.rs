@@ -65,13 +65,26 @@ pub async fn get_service_status(
 ) -> ServiceStatusResponse {
     let health_url = format!("{base_url}/health");
 
+    #[derive(Deserialize)]
+    struct HealthPayload {
+        mode: Option<String>,
+    }
+
     match with_auth(client.get(&health_url), backend_token).send().await {
-        Ok(response) if response.status().is_success() => ServiceStatusResponse {
-            running: true,
-            mode: "mock".to_string(),
-            base_url: base_url.to_string(),
-            message: "Python 本地服务可访问。".to_string(),
-        },
+        Ok(response) if response.status().is_success() => {
+            let mode = response
+                .json::<HealthPayload>()
+                .await
+                .ok()
+                .and_then(|p| p.mode)
+                .unwrap_or_else(|| "coqui".to_string());
+            ServiceStatusResponse {
+                running: true,
+                mode,
+                base_url: base_url.to_string(),
+                message: "Python 本地服务可访问。".to_string(),
+            }
+        }
         Ok(response) => ServiceStatusResponse {
             running: false,
             mode: "offline".to_string(),

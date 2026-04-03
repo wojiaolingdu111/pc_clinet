@@ -7,8 +7,18 @@ const name = ref('');
 const audioPath = ref('');
 const language = ref('zh');
 const busy = ref(false);
-const statusText = ref('首版先保留声音克隆入口，后续接入真实参考音频驱动的 voice cloning。');
+const statusText = ref('上传 6 秒以上的清晰录音，即可克隆您的声音用于 TTS 合成。');
 const voicesStore = useVoicesStore();
+
+async function pickAudioFile() {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const path = await invoke<string | null>('pick_audio_file');
+    if (path) audioPath.value = path;
+  } catch {
+    // 浏览器预览模式，用户可手动输入路径
+  }
+}
 
 async function submitClone() {
   if (!name.value.trim() || !audioPath.value.trim()) {
@@ -49,8 +59,11 @@ async function submitClone() {
     </label>
 
     <label class="field">
-      <span>参考音频路径</span>
-      <input v-model="audioPath" type="text" placeholder="例如：/path/to/reference.wav" />
+      <span>参考音频（WAV / MP3 / FLAC，建议 6 秒以上清晰录音）</span>
+      <div class="file-picker-row">
+        <input v-model="audioPath" type="text" placeholder="点击「浏览」选择文件" readonly />
+        <button class="secondary-btn" :disabled="busy" @click="pickAudioFile">浏览…</button>
+      </div>
     </label>
 
     <label class="field">
@@ -117,5 +130,30 @@ select {
 .helper-text {
   margin: 0;
   color: rgba(20, 33, 61, 0.72);
+}
+
+.file-picker-row {
+  display: flex;
+  gap: 8px;
+}
+
+.file-picker-row input {
+  flex: 1;
+  cursor: default;
+}
+
+.secondary-btn {
+  padding: 12px 16px;
+  border: 1px solid rgba(20, 33, 61, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

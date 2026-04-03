@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,7 +34,13 @@ class CloneVoicePayload(BaseModel):
     }
 
 
-ROOT_DIR = Path(__file__).resolve().parent
+# PyInstaller 冻结模式下 __file__ 指向临时解压目录，
+# 可执行文件本身才是安装目录的入口。
+ROOT_DIR = (
+    Path(sys.executable).resolve().parent
+    if getattr(sys, "frozen", False)
+    else Path(__file__).resolve().parent
+)
 APP_DATA_DIR = ROOT_DIR / "app-data"
 OUTPUT_DIR = APP_DATA_DIR / "outputs"
 VOICE_DIR = APP_DATA_DIR / "voices"
@@ -62,8 +69,12 @@ app.add_middleware(
 )
 app.mount("/media", StaticFiles(directory=APP_DATA_DIR), name="media")
 
-tts_service = TtsService(output_dir=OUTPUT_DIR, media_prefix="/media/outputs")
 voice_clone_service = VoiceCloneService(voice_dir=VOICE_DIR, media_prefix="/media/voices/profiles")
+tts_service = TtsService(
+    output_dir=OUTPUT_DIR,
+    media_prefix="/media/outputs",
+    profile_dir=VOICE_DIR / "profiles",
+)
 
 
 @app.middleware("http")
@@ -78,7 +89,11 @@ async def verify_backend_token(request, call_next):
 
 @app.get("/health")
 def health() -> dict[str, str | bool]:
-    return {"status": "ok", "mode": "mock"}
+    return {
+        "status": "ok",
+        "mode": "coqui",
+        "model_loaded": tts_service.is_loaded(),
+    }
 
 
 @app.get("/voices")
@@ -132,4 +147,6 @@ def delete_voice_profile(voice_profile_id: str) -> dict[str, str]:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app:app", host="127.0.0.1", port=BACKEND_PORT, reload=False)
+    # 冻结模式下无法用字符串 "app:app" 动态导入，直接传 app 对象
+    _app_target = app if getattr(sys, "frozen", False) else "app:app"
+    uvicorn.run(_app_target, host="127.0.0.1", port=BACKEND_PORT, reload=False)

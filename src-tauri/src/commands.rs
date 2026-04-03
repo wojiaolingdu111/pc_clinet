@@ -129,3 +129,17 @@ pub async fn delete_voice_profile(
     .await
     .map_err(|error| error.to_string())
 }
+
+#[tauri::command]
+pub async fn pick_audio_file() -> Option<String> {
+    tokio::task::spawn_blocking(|| {
+        rfd::FileDialog::new()
+            .add_filter("Audio", &["wav", "mp3", "flac", "m4a", "ogg"])
+            .set_title("选择参考音频文件（建议 6 秒以上清晰录音）")
+            .pick_file()
+            .map(|path| path.to_string_lossy().into_owned())
+    })
+    .await
+    .ok()
+    .flatten()
+}
