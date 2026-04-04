@@ -27,7 +27,7 @@
     "targets": "all",
     "createUpdaterArtifacts": false,
     "resources": [
-      "binaries/aitoreder-backend/**"
+      "binaries/aitoreder-backend/"
     ]
   }
 }
